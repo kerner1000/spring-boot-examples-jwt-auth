@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -30,18 +29,28 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException {
 
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        String token = null;
+        String token;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-
             try {
-            token = authHeader.substring(7);
-            String username = tokenService.getUsernameFromToken(token);;
-            String password = userService.getPasswordForUser(username);
-                if(tokenService.validateJwtToken(token, password)){
+                // remove 'Bearer ' substring
+                token = authHeader.substring(7);
+                /**
+                 * Get username and password from token. This is just one way to do it.
+                 * In principle, any information can be used to check if the token is valid,
+                 * in the most simple case just an arbitrary string such as a username, password
+                 * or API key.
+                 * Primary idea of authentication is signing the token using a private secret
+                 * or a public key/private key pair.
+                 * If the sent token can be decoded successfully, the request can be considered
+                 * trustworthy.
+                 */
+                String username = tokenService.getUsernameFromToken(token);
+                String password = userService.getPasswordForUser(username);
+                if (tokenService.validateJwtToken(token, password)) {
                     grantAccess(username);
                     filterChain.doFilter(request, response);
                     return;
@@ -52,7 +61,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 logger.error("Unable to get JWT Token", e);
             } catch (ExpiredJwtException e) {
                 logger.error("JWT Token has expired", e);
-            } catch (Exception e){
+            } catch (Exception e) {
                 logger.error(e.getLocalizedMessage(), e);
             }
         } else {

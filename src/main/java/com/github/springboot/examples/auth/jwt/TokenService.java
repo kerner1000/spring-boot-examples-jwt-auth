@@ -19,7 +19,7 @@ public class TokenService {
     private String jwtSecret;
 
     /**
-     * Checks if the provided token is not expired and contains an expected username.
+     * Checks if the provided token is not expired and contains an expected password.
      * Extend this method to do more checks if provided token is valid.
      *
      * @param token Token string
